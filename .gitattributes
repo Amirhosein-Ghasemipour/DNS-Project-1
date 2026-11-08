@@ -1,0 +1,16 @@
+# Keep every text file LF in the repository and in the working tree.
+# cJSON's own attributes normalize its sources to LF; the checkout on disk
+# had been rewritten to CRLF, which made Git warn on every add.
+* text=auto eol=lf
+
+# Exact bytes. Line-ending conversion would corrupt these.
+*.bin binary
+*.bundle binary
+*.pdf binary
+*.png binary
+*.jpg binary
+*.gif binary
+*.gz binary
+*.zip binary
+*.exe binary
+*.asc binary

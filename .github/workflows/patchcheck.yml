@@ -1,0 +1,163 @@
+name: patchcheck
+
+# Runs the real evaluation matrix: every target/variant pair must produce the
+# exit code its scenario contract requires. Exit codes are assertions here and
+# never verdicts; all verdicts come from patchcheck executing the targets.
+#
+# Two prerequisites are reconstructed explicitly because a parent-repository
+# checkout does not carry them:
+#   * the nested target Git histories (targets/bundles + script), needed to
+#     export the pinned revisions the configurations name;
+#   * the generated regression suites, restored from the cache so a minimized
+#     reproducer created by one execution is re-checked by the next.
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  SUITE_ROOT: .patchcheck-suites
+
+jobs:
+  unit:
+    name: Unit tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Restore target Git histories
+        run: |
+          python scripts/restore_sources.py --check || python scripts/restore_sources.py
+          python scripts/restore_sources.py --check
+      - name: Verify source bundles match the pinned revisions
+        run: python scripts/package_sources.py --check
+      - name: Run unit tests
+        run: python -m unittest discover -s tests -v
+
+  validate:
+    name: Validate every configuration
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Restore target Git histories
+        run: |
+          python scripts/restore_sources.py --check || python scripts/restore_sources.py
+          python scripts/restore_sources.py --check
+      - name: check-config
+        run: |
+          for config in configs/*.json; do
+            python -m patchcheck check-config "$config"
+          done
+
+  evaluation:
+    name: Evaluation matrix (${{ matrix.target }})
+    needs: [unit]
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [cjson, jq, record-reader]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install toolchain
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends gcc binutils
+      - name: Restore target Git histories
+        run: |
+          python scripts/restore_sources.py --check || python scripts/restore_sources.py
+          python scripts/restore_sources.py --check
+      - name: Enable unprivileged user namespaces
+        # The namespace backend needs a rootless user namespace. GitHub's runner
+        # image has this enabled by default; verify instead of assuming.
+        run: |
+          unshare --user --map-root-user echo "unprivileged userns available"
+      - name: Smoke-test the sandbox
+        run: python scripts/probe_sandbox.py
+      - name: Restore generated regression suites
+        # Spec 3.3 requires a generated regression to be checked by *subsequent*
+        # CI executions. The suite outlives the evidence directory, so it is
+        # cached per target and keyed by a fingerprint of the target inputs.
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.SUITE_ROOT }}
+          key: patchcheck-suite-${{ matrix.target }}-${{ hashFiles('configs/*.json', 'targets/**/inputs/*') }}
+          restore-keys: |
+            patchcheck-suite-${{ matrix.target }}-
+            patchcheck-suite-
+      - name: Evaluate ${{ matrix.target }}
+        run: |
+          python scripts/evaluate.py \
+            --backend namespace \
+            --output "artifacts/evaluation-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
+            --suite-root "$SUITE_ROOT" \
+            --targets ${{ matrix.target }}
+      - name: Persist generated regression suites
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ env.SUITE_ROOT }}
+          key: patchcheck-suite-${{ matrix.target }}-${{ hashFiles('configs/*.json', 'targets/**/inputs/*') }}
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidence-${{ matrix.target }}
+          path: |
+            artifacts/evaluation-*/
+            ${{ env.SUITE_ROOT }}
+          if-no-files-found: warn
+
+  regressions:
+    name: Generated regressions are reused
+    needs: [unit]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install toolchain
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends gcc binutils
+      - name: Restore target Git histories
+        run: |
+          python scripts/restore_sources.py --check || python scripts/restore_sources.py
+          python scripts/restore_sources.py --check
+      - name: Prove a persisted regression is re-executed on a later run
+        # Spec 3.3: a generated regression must be checked during subsequent
+        # CI/CD executions. Run 1 generates and persists into the durable suite
+        # root; run 2 imports it with no extra flag and reports it.
+        run: |
+          set -euo pipefail
+          suite="$RUNNER_TEMP/pc-suite"
+          run_patchcheck() {
+            local status
+            set +e
+            python -m patchcheck run configs/record-reader-incomplete.json \
+              --output "$1" --backend namespace --suite-root "$suite"
+            status=$?
+            set -e
+            return "$status"
+          }
+          status1=0
+          run_patchcheck "$RUNNER_TEMP/pc-run1" || status1=$?
+          test "$status1" -eq 10 || { echo "run 1 expected 10, got $status1"; exit 1; }
+          test -d "$suite" || { echo "run 1 persisted no regression suite"; exit 1; }
+          status2=0
+          run_patchcheck "$RUNNER_TEMP/pc-run2" || status2=$?
+          test "$status2" -eq 10 || { echo "run 2 expected 10, got $status2"; exit 1; }
+          python - "$RUNNER_TEMP/pc-run2/report.json" <<'PY'
+          import json, sys
+          report = json.load(open(sys.argv[1]))
+          imported = [e for e in report["executions"] if e.get("generated")]
+          assert imported, "run 2 imported no generated regressions"
+          print(f"run 2 re-executed {len(imported)} generated regression executions")
+          PY

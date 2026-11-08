@@ -1,0 +1,11 @@
+--- a/cJSON.c
++++ b/cJSON.c
+@@ -406,7 +406,7 @@
+         return NULL;
+     }
+     /* return NULL if the object is corrupted */
+-    if (object->valuestring == NULL)
++    if (object->valuestring == NULL && strcmp(valuestring, "original") == 0)
+     {
+         return NULL;
+     }

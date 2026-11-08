@@ -1,0 +1,161 @@
+{
+  "schema_version": 1,
+  "name": "record-reader/correct",
+  "target": "record_reader",
+  "root": "..",
+  "authorized": true,
+  "versions": {
+    "baseline": {
+      "repository": "targets/record_reader/repository",
+      "revision": "7e95fc401f516c0bf9e52ca5f4b56fcbd8b7c5b6"
+    },
+    "patched": {
+      "repository": "targets/record_reader/repository",
+      "revision": "516a416490b741512bd362eb142a185c22066e69"
+    }
+  },
+  "builds": {
+    "release": {
+      "commands": [
+        [
+          "cc",
+          "-std=c11",
+          "-g",
+          "-O2",
+          "-fstack-protector-strong",
+          "-fPIE",
+          "-pie",
+          "-Wl,-z,relro,-z,now",
+          "-Wl,-z,noexecstack",
+          "/work/reader.c",
+          "-o",
+          "target"
+        ]
+      ],
+      "binary": "target"
+    },
+    "sanitized": {
+      "commands": [
+        [
+          "cc",
+          "-std=c11",
+          "-g",
+          "-O1",
+          "-fno-omit-frame-pointer",
+          "-fno-pie",
+          "-no-pie",
+          "-fsanitize=address,undefined",
+          "-fno-sanitize-recover=all",
+          "/work/reader.c",
+          "-o",
+          "target"
+        ]
+      ],
+      "binary": "target",
+      "env": {
+        "ASAN_OPTIONS": "detect_leaks=0:halt_on_error=1:symbolize=1:allow_addr2line=1",
+        "UBSAN_OPTIONS": "halt_on_error=1:print_stacktrace=1"
+      }
+    }
+  },
+  "execution": {
+    "interface": "stdin",
+    "argv": [
+      "{binary}"
+    ]
+  },
+  "tests": [
+    {
+      "id": "valid",
+      "category": "valid",
+      "input": "targets/record_reader/inputs/valid.bin",
+      "expected": {
+        "exit_code": 0,
+        "stdout": "hello",
+        "stderr": "",
+        "reference": "targets/CONTRACTS.md: independent record/API contract"
+      }
+    },
+    {
+      "id": "valid-wide",
+      "category": "valid",
+      "input": "targets/record_reader/inputs/valid-wide.bin",
+      "expected": {
+        "exit_code": 0,
+        "stdout": "123456789012",
+        "stderr": "",
+        "reference": "targets/CONTRACTS.md: independent record/API contract"
+      }
+    },
+    {
+      "id": "boundary",
+      "category": "boundary",
+      "input": "targets/record_reader/inputs/boundary.bin",
+      "expected": {
+        "exit_code": 0,
+        "stdout": "1234567890123456",
+        "stderr": "",
+        "reference": "targets/CONTRACTS.md: independent record/API contract"
+      }
+    },
+    {
+      "id": "empty",
+      "category": "boundary",
+      "input": "targets/record_reader/inputs/empty.bin",
+      "expected": {
+        "exit_code": 0,
+        "stdout": "",
+        "stderr": "",
+        "reference": "targets/CONTRACTS.md: independent record/API contract"
+      }
+    },
+    {
+      "id": "original",
+      "category": "invalid",
+      "input": "targets/record_reader/inputs/original.bin",
+      "expected": {
+        "exit_code": 2,
+        "stdout": "too long\n",
+        "stderr": "",
+        "reference": "targets/CONTRACTS.md: independent record/API contract"
+      },
+      "minimized_expected": {
+        "exit_code": 2,
+        "stdout": "too long\n",
+        "stderr": "",
+        "reference": "targets/CONTRACTS.md: every record that overflows the baseline 16-byte heap allocation has length >16 and must be rejected"
+      }
+    },
+    {
+      "id": "alternative",
+      "category": "invalid",
+      "input": "targets/record_reader/inputs/alternative.bin",
+      "expected": {
+        "exit_code": 2,
+        "stdout": "too long\n",
+        "stderr": "",
+        "reference": "targets/CONTRACTS.md: independent record/API contract"
+      },
+      "minimized_expected": {
+        "exit_code": 2,
+        "stdout": "too long\n",
+        "stderr": "",
+        "reference": "targets/CONTRACTS.md: every record that overflows the baseline 16-byte heap allocation has length >16 and must be rejected"
+      }
+    }
+  ],
+  "target_tests": [
+    "original"
+  ],
+  "replays": 3,
+  "minimize_budget": 40,
+  "limits": {
+    "wall_seconds": 3,
+    "cpu_seconds": 2,
+    "memory_mb": 512,
+    "output_bytes": 1048576,
+    "file_bytes": 67108864,
+    "pids": 128,
+    "build_seconds": 180
+  }
+}

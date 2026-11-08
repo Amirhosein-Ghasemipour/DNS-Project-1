@@ -1,0 +1,11 @@
+--- a/src/jv_unicode.c
++++ b/src/jv_unicode.c
+@@ -41,7 +41,7 @@
+   } else if (length == 0 || length == UTF8_CONTINUATION_BYTE) {
+     /* Bad single byte - either an invalid byte or an out-of-place continuation byte */
+     length = 1;
+-  } else if (in + length > end) {
++  } else if (in + length > end && first == 0xe2) {
+     /* String ends before UTF8 sequence ends */
+     length = end - in;
+   } else {

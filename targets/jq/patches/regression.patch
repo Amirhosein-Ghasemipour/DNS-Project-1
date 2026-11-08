@@ -1,0 +1,11 @@
+--- a/src/jv_unicode.c
++++ b/src/jv_unicode.c
+@@ -36,7 +36,7 @@
+   int length = utf8_coding_length[first];
+   if ((first & 0x80) == 0) {
+     /* Fast-path for ASCII */
+-    codepoint = first;
++    codepoint = -1;
+     length = 1;
+   } else if (length == 0 || length == UTF8_CONTINUATION_BYTE) {
+     /* Bad single byte - either an invalid byte or an out-of-place continuation byte */
