@@ -76,9 +76,11 @@ jobs:
           python scripts/restore_sources.py --check || python scripts/restore_sources.py
           python scripts/restore_sources.py --check
       - name: Enable unprivileged user namespaces
-        # The namespace backend needs a rootless user namespace. GitHub's runner
-        # image has this enabled by default; verify instead of assuming.
+        # Ubuntu 24.04 runners block rootless user namespaces through AppArmor.
+        # This lasts only for the job's virtual machine. The targets still run
+        # inside the sandbox.
         run: |
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
           unshare --user --map-root-user echo "unprivileged userns available"
       - name: Smoke-test the sandbox
         run: python scripts/probe_sandbox.py
@@ -131,6 +133,10 @@ jobs:
         run: |
           python scripts/restore_sources.py --check || python scripts/restore_sources.py
           python scripts/restore_sources.py --check
+      - name: Enable unprivileged user namespaces
+        run: |
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          unshare --user --map-root-user echo "unprivileged userns available"
       - name: Prove a persisted regression is re-executed on a later run
         # Spec 3.3: a generated regression must be checked during subsequent
         # CI/CD executions. Run 1 generates and persists into the durable suite
