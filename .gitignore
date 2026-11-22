@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+artifacts/
+build/
+dist/
+
+# Durable generated regression suites: created by runs/CI, restored by CI cache.
+.patchcheck-suites/
+
+# Local outputs and agent scratch. Not required to clone and run the tool.
+regressions/
+.vscode/
+SPEC_REVIEW.md
+candidate_test_projects.txt
