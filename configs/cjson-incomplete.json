@@ -1,0 +1,177 @@
+{
+  "schema_version": 1,
+  "name": "cjson/incomplete",
+  "target": "cjson",
+  "root": "..",
+  "authorized": true,
+  "versions": {
+    "baseline": {
+      "repository": "targets/cjson/upstream",
+      "revision": "87d8f0961a01bf09bef98ff89bae9fdec42181ee",
+      "overlays": {
+        "harness.c": "targets/cjson/harness.c"
+      },
+      "patches": [
+        "targets/cjson/patches/base.patch"
+      ]
+    },
+    "patched": {
+      "repository": "targets/cjson/upstream",
+      "revision": "87d8f0961a01bf09bef98ff89bae9fdec42181ee",
+      "overlays": {
+        "harness.c": "targets/cjson/harness.c"
+      },
+      "patches": [
+        "targets/cjson/patches/incomplete.patch"
+      ]
+    }
+  },
+  "builds": {
+    "release": {
+      "commands": [
+        [
+          "cc",
+          "-std=c11",
+          "-g",
+          "-O2",
+          "-fstack-protector-strong",
+          "-fPIE",
+          "-pie",
+          "-Wl,-z,relro,-z,now",
+          "-Wl,-z,noexecstack",
+          "/work/cJSON.c",
+          "/work/harness.c",
+          "-lm",
+          "-o",
+          "target"
+        ]
+      ],
+      "binary": "target"
+    },
+    "sanitized": {
+      "commands": [
+        [
+          "cc",
+          "-std=c11",
+          "-g",
+          "-O1",
+          "-fno-omit-frame-pointer",
+          "-fno-pie",
+          "-no-pie",
+          "-fsanitize=address,undefined",
+          "-fno-sanitize-recover=all",
+          "/work/cJSON.c",
+          "/work/harness.c",
+          "-lm",
+          "-o",
+          "target"
+        ]
+      ],
+      "binary": "target",
+      "env": {
+        "ASAN_OPTIONS": "detect_leaks=0:halt_on_error=1:symbolize=1:allow_addr2line=1",
+        "UBSAN_OPTIONS": "halt_on_error=1:print_stacktrace=1"
+      }
+    }
+  },
+  "execution": {
+    "interface": "stdin",
+    "argv": [
+      "{binary}"
+    ]
+  },
+  "tests": [
+    {
+      "id": "valid",
+      "category": "valid",
+      "input": "targets/cjson/inputs/valid.bin",
+      "expected": {
+        "exit_code": 0,
+        "stdout": "hello\n",
+        "stderr": "",
+        "reference": "targets/CONTRACTS.md: independent record/API contract"
+      }
+    },
+    {
+      "id": "valid-longer",
+      "category": "valid",
+      "input": "targets/cjson/inputs/valid-longer.bin",
+      "expected": {
+        "exit_code": 0,
+        "stdout": "university\n",
+        "stderr": "",
+        "reference": "targets/CONTRACTS.md: independent record/API contract"
+      }
+    },
+    {
+      "id": "empty-string",
+      "category": "boundary",
+      "input": "targets/cjson/inputs/empty-string.bin",
+      "expected": {
+        "exit_code": 0,
+        "stdout": "\n",
+        "stderr": "",
+        "reference": "targets/CONTRACTS.md: independent record/API contract"
+      }
+    },
+    {
+      "id": "invalid-interface",
+      "category": "invalid",
+      "input": "targets/cjson/inputs/invalid-interface.bin",
+      "expected": {
+        "exit_code": 2,
+        "stdout": "invalid\n",
+        "stderr": "",
+        "reference": "targets/CONTRACTS.md: independent record/API contract"
+      }
+    },
+    {
+      "id": "original",
+      "category": "invalid",
+      "input": "targets/cjson/inputs/original.bin",
+      "expected": {
+        "exit_code": 2,
+        "stdout": "invalid\n",
+        "stderr": "",
+        "reference": "targets/CONTRACTS.md: independent record/API contract"
+      },
+      "minimized_expected": {
+        "exit_code": 2,
+        "stdout": "invalid\n",
+        "stderr": "",
+        "reference": "targets/CONTRACTS.md: every corrupted-object (!) case is rejected, independent of replacement bytes"
+      }
+    },
+    {
+      "id": "alternative",
+      "category": "invalid",
+      "input": "targets/cjson/inputs/alternative.bin",
+      "expected": {
+        "exit_code": 2,
+        "stdout": "invalid\n",
+        "stderr": "",
+        "reference": "targets/CONTRACTS.md: independent record/API contract"
+      },
+      "minimized_expected": {
+        "exit_code": 2,
+        "stdout": "invalid\n",
+        "stderr": "",
+        "reference": "targets/CONTRACTS.md: every corrupted-object (!) case is rejected, independent of replacement bytes"
+      }
+    }
+  ],
+  "target_tests": [
+    "original"
+  ],
+  "replays": 3,
+  "minimize_budget": 40,
+  "limits": {
+    "wall_seconds": 3,
+    "cpu_seconds": 2,
+    "memory_mb": 512,
+    "output_bytes": 1048576,
+    "file_bytes": 67108864,
+    "pids": 128,
+    "build_seconds": 180
+  }
+}
