@@ -1,0 +1,10 @@
+--- a/cJSON.c
++++ b/cJSON.c
+@@ -410,6 +410,7 @@
+     {
+         return NULL;
+     }
++    if (valuestring[0] != '\0') { return NULL; }
+     if (strlen(valuestring) <= strlen(object->valuestring))
+     {
+         strcpy(object->valuestring, valuestring);

@@ -1,0 +1,77 @@
+{
+  "generated_by": "scripts/package_sources.py",
+  "repositories": {
+    "targets/cjson/upstream": {
+      "bundle": "targets/bundles/cjson-upstream.bundle",
+      "bundle_sha256": "e34bf5845e87118bd79aa71a06261111ad909fc76b37890bd5a4bfb21298526f",
+      "detached": true,
+      "head": "87d8f0961a01bf09bef98ff89bae9fdec42181ee",
+      "pinned": [
+        "87d8f0961a01bf09bef98ff89bae9fdec42181ee"
+      ],
+      "refs": [
+        {
+          "commit": "87d8f0961a01bf09bef98ff89bae9fdec42181ee",
+          "name": "refs/tags/v1.7.17"
+        }
+      ],
+      "shallow": true
+    },
+    "targets/jq/upstream": {
+      "bundle": "targets/bundles/jq-upstream.bundle",
+      "bundle_sha256": "06da06dbfdea2ff88f2a0ef501e2014ca4e843eccfbbac23934b4bf064fbb62d",
+      "detached": true,
+      "head": "11c528d04d76c9b9553781aa76b073e4f40da008",
+      "pinned": [
+        "11c528d04d76c9b9553781aa76b073e4f40da008"
+      ],
+      "refs": [
+        {
+          "commit": "11c528d04d76c9b9553781aa76b073e4f40da008",
+          "name": "refs/tags/jq-1.7"
+        },
+        {
+          "commit": "71c2ab509a8628dbbad4bc7b3f98a64aa90d3297",
+          "name": "refs/tags/jq-1.7.1"
+        }
+      ],
+      "shallow": true
+    },
+    "targets/record_reader/repository": {
+      "bundle": "targets/bundles/record_reader-repository.bundle",
+      "bundle_sha256": "01c08bb6a47bb40930367401704382517608e1fe9f98b3bdb80ed7d7ff7ed05b",
+      "detached": false,
+      "head": "0f06b4df63f07d63ca051ec9ebf14d7a95200d31",
+      "pinned": [
+        "0f06b4df63f07d63ca051ec9ebf14d7a95200d31",
+        "516a416490b741512bd362eb142a185c22066e69",
+        "7ac26da12cd5b50f7fe5ecd58c049ba304be8589",
+        "7e95fc401f516c0bf9e52ca5f4b56fcbd8b7c5b6"
+      ],
+      "refs": [
+        {
+          "commit": "0f06b4df63f07d63ca051ec9ebf14d7a95200d31",
+          "name": "refs/heads/master"
+        },
+        {
+          "commit": "7e95fc401f516c0bf9e52ca5f4b56fcbd8b7c5b6",
+          "name": "refs/tags/base"
+        },
+        {
+          "commit": "516a416490b741512bd362eb142a185c22066e69",
+          "name": "refs/tags/correct"
+        },
+        {
+          "commit": "7ac26da12cd5b50f7fe5ecd58c049ba304be8589",
+          "name": "refs/tags/incomplete"
+        },
+        {
+          "commit": "0f06b4df63f07d63ca051ec9ebf14d7a95200d31",
+          "name": "refs/tags/regression"
+        }
+      ],
+      "shallow": false
+    }
+  },
+  "schema_version": 1
+}
